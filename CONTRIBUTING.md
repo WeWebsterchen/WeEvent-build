@@ -19,7 +19,7 @@
 
 ### 编写文档
 
-我们的文档位于[docs](https://weeventdoc.readthedocs.io/en/latest/)目录中的GitHub上。你看到一个错字或其他方法来改善它吗？随意编辑并提交拉取请求！
+我们的文档位于[docs](https://weeventdoc.readthedocs.io/zh_CN/latest/)目录中的GitHub上。你看到一个错字或其他方法来改善它吗？随意编辑并提交拉取请求！
 
 ### 提供帮助
 
