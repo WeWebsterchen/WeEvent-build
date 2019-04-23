@@ -26,7 +26,6 @@ echo "param channel_info:"$channel_info &>> $installPWD/install.log
 function copy_file(){
     cp $apps_path/* $out_path/apps/
     cp $conf_path/* $out_path/conf/
-    rm -rf $out_path/conf/application-dev.properties
     cp $conf_path/../deploy-topic-control.sh $out_path/
     cp $conf_path/../gen-cert-key.sh $out_path/
     cp $conf_path/../broker.sh $out_path/

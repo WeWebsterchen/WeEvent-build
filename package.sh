@@ -1,32 +1,34 @@
 #!/bin/bash
-broker_git_address=
-broker_git="https://github.com/WeBankFinTech/WeEvent.git"
-broker_branch=
-governance_git_address=
-governance_git="https://github.com/WeBankFinTech/WeGovernance.git"
-governance_branch=
-maven=aliyun
-version=
+broker_git_address="https://github.com/WeBankFinTech/WeEvent.git"
+broker_tag=""
+broker_project_name=""
+governance_git_address="https://github.com/WeBankFinTech/WeEvent-governance.git"
+governance_tag=""
+governance_project_name=""
+nginx_tag=""
+version=""
 top_path=`pwd`
 
 function usage(){
     echo "Usage:"
-    echo "     package weevent: ./package.sh --broker git@git.weoa.com:ttip/weevent-broker.git --governance git@git.weoa.com:ttip/weevent-governance.git --maven weoa --version 0.9.0"
-    echo "     package broker module: ./package.sh --broker git@git.weoa.com:ttip/weevent-broker.git --maven weoa --version 0.9.0"
-    echo "     package governance module: ./package.sh --governance git@git.weoa.com:ttip/weevent-governance.git --maven weoa --version 0.9.0"
+    echo "     package weevent: ./package.sh --version 0.9.0"
+    echo "     package broker module: ./package.sh --broker tag --version 0.9.0"
+    echo "     package nginx module: ./package.sh --nginx tag --version 0.9.0"
+    echo "     package governance module: ./package.sh --governance tag --version 0.9.0"
     exit 1
 }
 
-if [ $# -lt 2 ]; then
-    usage;
-fi
+param_count=$#
 
+if [ $param_count -ne 2 ] && [ $param_count -ne 4 ]; then
+    usage
+fi
 
 while [ $# -ge 2 ] ; do
     case "$1" in
-    --broker) para="$1 = $2;";broker_git_address="$2";shift 2;;
-    --governance) para="$1 = $2;";governance_git_address="$2";shift 2;;
-    --maven) para="$1 = $2;";maven="$2";shift 2;;
+    --broker) para="$1 = $2;";broker_tag=$2;shift 2;;
+    --nginx) para="$1 = $2;";nginx_tag=$2;shift 2;;
+    --governance) para="$1 = $2;";governance_tag=$2;shift 2;;
     --version) para="$1 = $2;";version="$2";shift 2;;
     *) echo "unknown parameter $1." ; exit 1 ; break;;
     esac
@@ -35,124 +37,133 @@ done
 weevent_out_path=$top_path/weevent-$version
 module_out_path=$top_path/modules
 
-broker_git=`echo $broker_git_address | awk -F '[#]' '{print $(NF=1)}'`
-broker_branch=`echo $broker_git_address | awk -F '[#]' '{print $(NF=2)}'`
-if [ -z $broker_branch ];then 
-    broker_branch="master"
+if [ -z "$broker_tag" ] && [ -z "$governance_tag" ] && [ -z "$nginx_tag" ];then
+    echo "param broker_git_address:"$broker_git_address
+    echo "param governance_git_address:"$governance_git_address
+else
+    if [ -n "$broker_tag" ];then
+        echo "param broker_git_address:"$broker_git_address
+    fi
+    if [ -n "$governance_tag" ];then
+        echo "param governance_git_address:"$governance_git_address
+    fi
 fi
 
-governance_git=`echo $governance_git_address | awk -F '[#]' '{print $(NF=1)}'`
-governance_branch=`echo $governance_git_address | awk -F '[#]' '{print $(NF=2)}'`
-if [ -z $governance_branch ];then    
-    governance_branch="master"
-fi
+if [ -n "$version" ];then
+    echo "param version:"$version
+else
+    echo "package version is null"
+    exit 1
+fi	
 
-echo "param broker_git:"$broker_git
-echo "param broker_branch:"$broker_branch
-echo "param governance_git:"$governance_git
-echo "param governance_branch:"$governance_branch
-echo "param maven:"$maven
-echo "param version:"$version
 
 function copy_file(){ 
-    for fileName in `ls`;
-        do
-            if [ -f $fileName ]; then
-                if [[ $fileName != "package.sh" && $fileName != "weevent-$version.tar.gz" ]];then
-                    cp $fileName $weevent_out_path;                    
-                fi
-            elif test -d $fileName; then
-                if [[ $fileName != "weevent-$version" ]];then
-                    cp -r $fileName $weevent_out_path; 
-                fi					
-            else
-                echo "$FilePath is a invalid path";
-            fi
-        done 
-}
-
-function remove_modules_tempdir_and_tar(){
-    cd $weevent_out_path/modules
-    remove_dir $weevent_out_path/modules/broker/temp 
-    remove_dir $weevent_out_path/modules/broker/weevent-broker-$version
-    if [ -e $weevent_out_path/modules/broker/weevent-broker-$version.tar.gz ];then 
-        rm $weevent_out_path/modules/broker/weevent-broker-$version.tar.gz
-    fi
-    
-    remove_dir $weevent_out_path/modules/governance/temp 
-    remove_dir $weevent_out_path/modules/governance/weevent-governance-$version
-    if [ -e $weevent_out_path/modules/governance/weevent-governance-$version.tar.gz ];then 
-        rm $weevent_out_path/modules/governance/weevent-governance-$version.tar.gz
-    fi   
-}
-
-# if path exists,remove it
-function remove_dir(){
-    if [ -d $1 ];then
-        rm -rf $1
-        execute_result "remove path $1"
-    fi 
+    cp ./check-service.sh $weevent_out_path
+    cp ./config.ini $weevent_out_path
+    cp ./install-all.sh $weevent_out_path
+    cp ./README.md $weevent_out_path
+    cp ./start-all.sh $weevent_out_path
+    cp ./stop-all.sh $weevent_out_path
+    cp ./uninstall-all.sh $weevent_out_path
+    cp -r ./third-packages $weevent_out_path
+	
+    mkdir -p $weevent_out_path/modules/broker
+    cp ./modules/broker/install-broker.sh $weevent_out_path/modules/broker
+    mkdir -p $weevent_out_path/modules/governance
+    cp ./modules/governance/install-governance.sh $weevent_out_path/modules/governance
+    mkdir -p $weevent_out_path/modules/nginx
+    cp ./modules/nginx/install-nginx.sh $weevent_out_path/modules/nginx  
+    cp ./modules/nginx/nginx.sh $weevent_out_path/modules/nginx 
+    cp -r ./modules/nginx/conf $weevent_out_path/modules/nginx 
 }
 
 # clone broker from git, build
 function broker_clone_build(){
     cd $out_path/broker
-    mkdir -p temp
-    cd temp
-    echo "clone broker from git start "
-    # branch of $broker_branch
-    git clone -b $broker_branch $broker_git;
-    execute_result "weevent-broker git address or branch error,clone from git"
-    yellow_echo "clone broker from git success  "
-    
-    if [ -e $out_path/broker/temp/weevent-broker/build.gradle ]; then 
-        sed -i "/^version/cversion = \"$version\""  $out_path/broker/temp/weevent-broker/build.gradle
-        execute_result "config broker version"
-        if [ -n "$maven" ];then
-            sed -i 's/aliyun/weoa/g' $out_path/broker/temp/weevent-broker/build.gradle
-            execute_result "update maven store"
-        fi         
+    if [ -d $out_path/broker/temp ];then
+        rm -rf $out_path/broker/temp
     fi
 	
-    cd weevent-broker	 
-    echo "build weevent-broker start "
+    mkdir -p temp
+    cd temp
+    echo "clone broker from git start"
+    # clone
+    git clone $broker_git_address
+    execute_result "clone broker from git"
+    yellow_echo "clone broker from git success"
+	
+    if [ $(echo `ls -l |grep "^d"|wc -l`) -ne 1 ];then
+        exit 1
+    fi
+	
+    broker_project_name=$(ls -l | awk '/^d/{print $NF}')
+    if [ -z "$broker_project_name" ];then
+        echo "clone broker fail"
+        exit 1
+    fi 
+	
+    if [ -e $out_path/broker/temp/$broker_project_name/build.gradle ]; then 
+        sed -i "/^version/cversion = \"$version\""  $out_path/broker/temp/$broker_project_name/build.gradle
+        execute_result "config broker version"        
+    fi
+	
+    cd $broker_project_name	 
+    echo "build broker start"
     # build
     gradle clean build -x test;
-    execute_result "weevent-broker build"
-    yellow_echo "build weevent-broker success "       
+    execute_result "broker build"
+	
+    if [ -e $out_path/broker/temp/$broker_project_name/conf/application-dev.properties ]; then 
+        rm $out_path/broker/temp/$broker_project_name/conf/application-dev.properties
+    fi
+    yellow_echo "build broker success"       
 }
 
 # clone governance from git, build
 function governance_clone_build(){
     cd $out_path/governance/
-    mkdir -p temp
-    cd  temp 
-    echo "clone weevent-governance from git start "
-    # branch of $governance_branch
-    git clone -b $governance_branch $governance_git;
-    execute_result "weevent-governance git address or branch error,clone from git"
-    yellow_echo "clone weevent-governance from git success  "
-	
-    if [ -e $out_path/governance/temp/weevent-governance/build.gradle ]; then
-        sed -i "/^version/cversion = \"$version\"" $out_path/governance/temp/weevent-governance/build.gradle
-        execute_result "config governance version"
-        if [ -n "$maven" ];then
-            sed -i 's/aliyun/weoa/g' $out_path/governance/temp/weevent-governance/build.gradle
-            execute_result "update maven store"
-        fi                        
+    if [ -d $out_path/governance/temp ];then
+        rm -rf $out_path/governance/temp
     fi
 	
-    cd weevent-governance
-    echo "build weevent-governance start "
+    mkdir -p temp
+    cd  temp 
+    echo "clone governance from git start "
+    # clone
+    git clone $governance_git_address
+    execute_result "clone governance from git"
+    yellow_echo "clone governance from git success  "
+	
+    if [ $(echo `ls -l |grep "^d"|wc -l`) -ne 1 ];then
+        exit 1
+    fi
+	
+    governance_project_name=$(ls -l | awk '/^d/{print $NF}')
+    if [ -z "$governance_project_name" ];then
+        echo "clone governance fail"
+        exit 1
+    fi
+	
+    if [ -e $out_path/governance/temp/$governance_project_name/build.gradle ]; then
+        sed -i "/^version/cversion = \"$version\"" $out_path/governance/temp/$governance_project_name/build.gradle
+        execute_result "config governance version"                       
+    fi
+	
+    cd $governance_project_name
+    echo "build governance start "
     # build
-    gradle clean build -x test;	
-    execute_result "weevent-governance build" 	 
-    yellow_echo "build weevent-governance success  "	    
+    gradle clean build -x test
+    execute_result "governance build" 
+
+    if [ -e $out_path/governance/temp/$governance_project_name/dist/conf/application-dev.yml ]; then
+        rm $out_path/governance/temp/$governance_project_name/dist/conf/application-dev.yml                       
+    fi	
+    yellow_echo "build governance success "	    
 }
 
 function execute_result(){
     if [ $? -ne 0 ];then
-        echo "$1  fail"
+        echo "$1 fail"
         exit 1
     fi	 	 
 }
@@ -160,7 +171,7 @@ function execute_result(){
 # chmod $ dos2unix
 function set_permission(){
     cd $1	
-    find $1 -name "*.sh" -exec chmod +x {} \;  
+    find $1 -name "*.sh" -exec chmod +x {} \;
     find $1 -name "*.sh" -exec dos2unix {} \;
     find $1 -name "*.ini" -exec dos2unix {} \;
     find $1 -name "*.properties" -exec dos2unix {} \;
@@ -169,37 +180,38 @@ function set_permission(){
 
 # switch to prod,remove dev properties
 function switch_to_prod(){
-    if [ -e $out_path/broker/conf/application.properties ]; then	    
-        sed -i 's/dev/prod/' $out_path/broker/conf/application.properties
-    fi
+    if [ -z "$broker_tag" ] && [ -z "$governance_tag" ];then
+        if [ -e $out_path/broker/conf/application.properties ]; then	    
+            sed -i 's/dev/prod/' $out_path/broker/conf/application.properties
+        fi
 
-    if [ -e $out_path/governance/conf/application.yml ]; then	    
-        sed -i 's/dev/prod/' $out_path/governance/conf/application.yml		
-    fi
+        if [ -e $out_path/governance/conf/application.yml ]; then	    
+            sed -i 's/dev/prod/' $out_path/governance/conf/application.yml		
+        fi
 	
-    if [ -e $out_path/broker/conf/application-dev.properties ]; then	
-        rm $out_path/broker/conf/application-dev.properties
-    fi
+        if [ -e $out_path/broker/conf/application-dev.properties ]; then	
+            rm $out_path/broker/conf/application-dev.properties
+        fi
 
-    if [ -e $out_path/governance/conf/application-dev.yml ]; then	    
-        rm $out_path/governance/conf/application-dev.yml	
-    fi
+        if [ -e $out_path/governance/conf/application-dev.yml ]; then	    
+            rm $out_path/governance/conf/application-dev.yml	
+        fi
+    else
+        if [ -e $out_path/broker/weevent-broker-$version/conf/application.properties ]; then	    
+            sed -i 's/dev/prod/' $out_path/broker/weevent-broker-$version/conf/application.properties
+        fi
 
-
-    if [ -e $out_path/broker/weevent-broker-$version/conf/application.properties ]; then	    
-        sed -i 's/dev/prod/' $out_path/broker/weevent-broker-$version/conf/application.properties
-    fi
-
-    if [ -e $out_path/governance/weevent-governance-$version/conf/application.yml ]; then	    
-        sed -i 's/dev/prod/' $out_path/governance/weevent-governance-$version/conf/application.yml		
-    fi
+        if [ -e $out_path/governance/weevent-governance-$version/conf/application.yml ]; then	    
+            sed -i 's/dev/prod/' $out_path/governance/weevent-governance-$version/conf/application.yml		
+        fi
 	
-    if [ -e $out_path/broker/weevent-broker-$version/conf/application-dev.properties ]; then	
-        rm $out_path/broker/weevent-broker-$version/conf/application-dev.properties
-    fi
+        if [ -e $out_path/broker/weevent-broker-$version/conf/application-dev.properties ]; then	
+            rm $out_path/broker/weevent-broker-$version/conf/application-dev.properties
+        fi
 
-    if [ -e $out_path/governance/weevent-governance-$version/conf/application-dev.yml ]; then	    
-        rm $out_path/governance/weevent-governance-$version/conf/application-dev.yml	
+        if [ -e $out_path/governance/weevent-governance-$version/conf/application-dev.yml ]; then	    
+            rm $out_path/governance/weevent-governance-$version/conf/application-dev.yml	
+        fi
     fi
 }
 
@@ -227,24 +239,23 @@ function package_weevent(){
     confirm $weevent_out_path 
     mkdir -p weevent-$version
     execute_result "mkdir weevent-$version"
-    copy_file;
-    remove_modules_tempdir_and_tar;
+    copy_file
     out_path=$weevent_out_path/modules
         
-    broker_clone_build $out_path;
-    cp -r $out_path/broker/temp/weevent-broker/dist/* $out_path/broker;
-    cd $out_path/broker;
-    rm -rf temp;
-    echo "copy weevent-broker dist over  "
+    broker_clone_build $out_path
+    cp -r $out_path/broker/temp/$broker_project_name/dist/* $out_path/broker
+    cd $out_path/broker
+    rm -rf temp
+    echo "copy broker dist over "
         
-    governance_clone_build $out_path;
-    cp -r $out_path/governance/temp/weevent-governance/dist/* $out_path/governance;
-    cd $out_path/governance;
-    rm -rf temp;
-    echo "copy weevent-governance dist over  " 
+    governance_clone_build $out_path
+    cp -r $out_path/governance/temp/$governance_project_name/dist/* $out_path/governance
+    cd $out_path/governance
+    rm -rf temp
+    echo "copy governance dist over " 
                  
-    switch_to_prod $out_path;              
-    set_permission $weevent_out_path;
+    switch_to_prod $out_path            
+    set_permission $weevent_out_path
         
     echo "tar weevent-$version start "
     tar -czvf weevent-$version.tar.gz weevent-$version
@@ -261,15 +272,15 @@ function package_weevent_broker(){
     mkdir -p weevent-broker-$version
     execute_result "mkdir weevent-broker-$version"
            
-    broker_clone_build $out_path; 
+    broker_clone_build $out_path 
     
-    cp -r $out_path/broker/temp/weevent-broker/dist/* $out_path/broker/weevent-broker-$version;
-    cd $out_path/broker;
-    rm -rf temp;
-    echo "copy weevent-broker dist over  " 
+    cp -r $out_path/broker/temp/$broker_project_name/dist/* $out_path/broker/weevent-broker-$version
+    cd $out_path/broker
+    rm -rf temp
+    echo "copy weevent-broker dist over " 
         
-    switch_to_prod $out_path;    
-    set_permission $out_path/broker/weevent-broker-$version;
+    switch_to_prod $out_path    
+    set_permission $out_path/broker/weevent-broker-$version
     
     echo "tar weevent-broker-$version start "
     tar -czvf weevent-broker-$version.tar.gz weevent-broker-$version
@@ -286,15 +297,15 @@ function package_weevent_governance(){
     mkdir -p weevent-governance-$version
     execute_result "mkdir weevent-governance-$version"
     
-    governance_clone_build $out_path;
+    governance_clone_build $out_path
     
-    cp -r $out_path/governance/temp/weevent-governance/dist/* $out_path/governance/weevent-governance-$version;
-    cd $out_path/governance;
-    rm -rf temp;
+    cp -r $out_path/governance/temp/$governance_project_name/dist/* $out_path/governance/weevent-governance-$version
+    cd $out_path/governance
+    rm -rf temp
     echo "copy weevent-governance dist over  " 
           
-    switch_to_prod $out_path;   
-    set_permission $out_path/governance/weevent-governance-$version;
+    switch_to_prod $out_path   
+    set_permission $out_path/governance/weevent-governance-$version
     
     echo "tar weevent-governance-$version start "
     tar -czvf weevent-governance-$version.tar.gz weevent-governance-$version
@@ -302,29 +313,50 @@ function package_weevent_governance(){
     execute_result "remove folder weevent-governance-$version"
 }
 
+# package weevent-nginx-$version
+function package_weevent_nginx(){
+    local out_path=""
+    out_path=$module_out_path       
+    confirm $out_path/nginx/weevent-nginx-$version  
+    cd $out_path/nginx      
+    mkdir -p weevent-nginx-$version
+    execute_result "mkdir weevent-nginx-$version"
+     
+    cp -r ./conf/ ./weevent-nginx-$version
+    cp ./nginx.sh ./weevent-nginx-$version
+    cp ./build-nginx.sh ./weevent-nginx-$version
+    mkdir -p weevent-nginx-$version/third-packages
+    cp $top_path/third-packages/nginx-1.14.2.tar.gz ./weevent-nginx-$version/third-packages
+    cp $top_path/third-packages/pcre-8.20.tar.gz ./weevent-nginx-$version/third-packages  
+           
+    set_permission $out_path/nginx/weevent-nginx-$version
+    
+    echo "tar weevent-nginx-$version start "
+    tar -czvf weevent-nginx-$version.tar.gz weevent-nginx-$version
+    rm -rf weevent-nginx-$version
+    execute_result "remove folder weevent-nginx-$version"
+}
+
 function main(){ 
-    if [ -z "$version" ];then
-        echo "package version is null"
-        exit 1
-    fi    
            
     # package
-    if [ -n "$broker_git_address" ];then 
-        if [ -n "$governance_git_address" ];then
-            package_weevent
-        else
+    if [ -z "$broker_tag" ] && [ -z "$governance_tag" ] && [ -z "$nginx_tag" ];then
+		package_weevent        
+    else
+        if [ -n "$broker_tag" ];then
             package_weevent_broker
-        fi          
-    else 
-        if [ -n "$governance_git_address" ];then
+        fi
+		
+        if [ -n "$governance_tag" ];then
             package_weevent_governance
-        else
-            echo "git address null"
-            usage 
-        fi       
+        fi
+		
+        if [ -n "$nginx_tag" ];then
+            package_weevent_nginx
+        fi   
     fi  
     
     yellow_echo "package success "
 }
 
-main $1 $2 $3 $4 $5 $6
+main

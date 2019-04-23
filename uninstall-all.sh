@@ -42,7 +42,7 @@ function main(){
         fi	
     fi
 	
-    read -p "Please confirm if  you remove the WeEvent?" cmd_input
+    read -p "Please confirm if  you remove the WeEvent?[Y/N]" cmd_input
     if [ "Y" != "$cmd_input" ]; then
         echo "input $cmd_input, uninstall skipped"
         exit 1

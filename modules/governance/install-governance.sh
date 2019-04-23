@@ -11,28 +11,16 @@ function governance_setup() {
     mkdir $out_path/logs
     cp $apps_path/* $out_path/apps/
     cp -r $conf_path/* $out_path/conf/
-    rm -rf $out_path/conf/application-dev.yml
     cp ./governance.sh $out_path/
     cp ./check-service.sh $out_path/
-    cp ./init-governance.sh $out_path/	
+    cp ./init-governance.sh $out_path/
     
-    mkdir -p $nginx_path/html
-    rm -rf $nginx_path/html/*
-    cp -r $web_path/*  $nginx_path/html/
-    
- 
-    if [ "$ssl"x = "true"x ];
-    then
-        eval sed -i "s/server_ssl_enabled/${ssl}/" $out_path/conf/application.yml
-        eval sed -i "s/event_broker_ssl/${ssl}/" $out_path/conf/application-prod.yml
-        eval sed -i "s/http_mode/https/" $out_path/conf/application-prod.yml    
-    else
-        eval sed -i "s/server_ssl_enabled/false/" $out_path/conf/application.yml
-        eval sed -i "s/event_broker_ssl/false/" $out_path/conf/application-prod.yml
-        eval sed -i "s/http_mode/http/" $out_path/conf/application-prod.yml    
+    if [ -d $nginx_path/html ];then
+        rm -rf $nginx_path/html/*
     fi
-    echo "set ssl success" &>> $installPWD/install.log    
-     
+    mkdir -p $nginx_path/html
+    cp -r $web_path/*  $nginx_path/html/	
+      
     if [[ -z $server_port ]];
     then
         echo "server_port is empty."
@@ -110,7 +98,6 @@ function governance_setup() {
 para=""
 conf_path="./conf"
 apps_path="./apps"
-web_path="./html"
 installPWD=$(dirname $(dirname `pwd`))
 
 # usage
