@@ -63,8 +63,6 @@ function nginx_setup() {
         sed -i "s/localhost:8082/$governance_url/g" $nginx_path/conf/conf.d/rs.conf
     fi
     
-    echo "copy web html" &>> $top_path/install.log
-    rm -rf $nginx_path/html/*; cp -r ./html/* $nginx_path/html/
     cp nginx.sh $nginx_path
 
     echo "nginx mdoule install complete!" &>> $top_path/install.log
