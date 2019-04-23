@@ -13,7 +13,13 @@ function governance_setup() {
     cp -r $conf_path/* $out_path/conf/
     cp ./governance.sh $out_path/
     cp ./check-service.sh $out_path/
-    cp ./init-governance.sh $out_path/	
+    cp ./init-governance.sh $out_path/
+    
+    if [ -d $nginx_path/html ];then
+        rm -rf $nginx_path/html/*
+    fi
+    mkdir -p $nginx_path/html
+    cp -r $web_path/*  $nginx_path/html/	
       
     if [[ -z $server_port ]];
     then
