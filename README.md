@@ -3,8 +3,10 @@
 
 ### 构建安装包
 - 快速安装和部署
+
     快速搭建一套`WeEvent`服务，请参考[文档](https://weeventdoc.readthedocs.io/zh_CN/latest/install/quickinstall.html)。通过一键部署的`WeEvent`服务，用户可以快速体验和开发。
 - 详细安装包构建
+
     快速构建`Broker`模块、`Governance`模块、`Nginx`模块安装包。并支持一键安装所有子模块，提供统一的服务启停和监控脚本。
 
 
